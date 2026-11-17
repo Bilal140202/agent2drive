@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>agent2drive — one command. your Drive.</title>
+<meta name="description" content="One command connects an agent to your Google Drive. Paste-back OAuth, drive.file scope, slot uploads with byte-exact verification, self-restoring after sandbox wipes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0f0d; --bg2:#101613; --ink:#eef3ef; --ink-dim:#93a49a;
+  --line:#22302a; --accent:#4ade80; --accent-ink:#06130b;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --disp:'Space Grotesk',system-ui,sans-serif;
+  --body:'Inter',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);
+  line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:0 clamp(16px,4vw,32px)}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+nav{position:sticky;top:0;z-index:50;background:rgba(11,15,13,.86);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+.mark{font-family:var(--disp);font-weight:700;font-size:18px;letter-spacing:-.02em}
+.mark span{color:var(--accent)}
+nav .links{display:flex;gap:20px;font-size:14px}
+nav .links a{color:var(--ink-dim)}
+nav .links a:hover{color:var(--ink);text-decoration:none}
+@media(max-width:560px){nav .links a:nth-child(3){display:none}}
+header{padding:clamp(56px,10vw,110px) 0 clamp(40px,7vw,72px);
+  border-bottom:1px solid var(--line)}
+.kicker{font-family:var(--mono);font-size:clamp(11px,1.6vw,13px);
+  color:var(--accent);letter-spacing:.14em;text-transform:uppercase;margin-bottom:18px}
+h1{font-family:var(--disp);font-weight:700;letter-spacing:-.03em;
+  line-height:1.02;font-size:clamp(2.6rem,7.5vw,5.2rem);max-width:16ch}
+h1 em{font-style:normal;color:var(--accent)}
+.lede{max-width:52ch;color:var(--ink-dim);font-size:clamp(15px,2.2vw,18px);
+  margin:22px 0 30px}
+.cta{display:inline-flex;gap:14px;flex-wrap:wrap}
+.btn{font-family:var(--disp);font-weight:600;font-size:15px;padding:12px 22px;
+  border-radius:10px;border:1px solid var(--line);color:var(--ink);
+  transition:transform .15s ease,background .15s ease}
+.btn:hover{text-decoration:none;transform:translateY(-2px)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{background:#6ee7a0}
+/* terminal */
+.term{margin-top:clamp(36px,6vw,60px);border:1px solid var(--line);
+  border-radius:14px;background:#080c0a;overflow:hidden}
+.term-bar{display:flex;gap:7px;padding:12px 14px;border-bottom:1px solid var(--line);
+  background:var(--bg2)}
+.term-bar i{width:11px;height:11px;border-radius:50%;background:var(--line);
+  display:block}
+.term-bar i:first-child{background:#e35d5d}.term-bar i:nth-child(2){background:#e3b95d}
+.term-body{font-family:var(--mono);font-size:clamp(12px,1.7vw,14px);
+  line-height:1.8;padding:18px;min-height:15.5em;white-space:pre-wrap}
+.term-body .u{color:var(--ink-dim)}
+.term-body .ok{color:var(--accent)}
+.term-body .warn{color:#e3b95d}
+.caret{display:inline-block;width:.6em;height:1.1em;background:var(--accent);
+  vertical-align:-.2em;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+section{padding:clamp(48px,8vw,90px) 0;border-bottom:1px solid var(--line)}
+.sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:8px}
+.num{font-family:var(--mono);color:var(--accent);font-size:14px}
+h2{font-family:var(--disp);font-weight:700;letter-spacing:-.02em;
+  font-size:clamp(1.7rem,4.4vw,2.6rem)}
+.sec-sub{color:var(--ink-dim);max-width:62ch;margin-bottom:clamp(24px,4vw,40px)}
+/* flow */
+.flow{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:760px){.flow{grid-template-columns:1fr}}
+.step{border:1px solid var(--line);border-radius:12px;padding:20px;
+  background:var(--bg2);position:relative}
+.step .n{font-family:var(--mono);color:var(--accent);font-size:12px;
+  letter-spacing:.1em}
+.step h3{font-family:var(--disp);font-size:17px;margin:6px 0 8px}
+.step p{color:var(--ink-dim);font-size:14px}
+.step code{font-family:var(--mono);font-size:12.5px;color:var(--ink)}
+.callout{margin-top:18px;border:1px dashed #e3b95d55;border-radius:12px;
+  padding:16px 18px;background:#171308;color:#e3d9b8;font-size:14px}
+.callout b{color:#e3b95d;font-family:var(--mono);font-weight:500}
+/* tree */
+.treegrid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(20px,3vw,40px);
+  align-items:start}
+@media(max-width:820px){.treegrid{grid-template-columns:1fr}}
+.tree{font-family:var(--mono);font-size:clamp(12px,1.6vw,14px);
+  border:1px solid var(--line);border-radius:12px;background:var(--bg2);
+  padding:20px;line-height:2}
+.tree .dir{color:var(--accent)}
+.tree .f{color:var(--ink-dim)}
+.tree .row{transition:all .35s ease}
+html.js .tree .row{opacity:0;transform:translateX(-8px)}
+html.js .tree .row.in{opacity:1;transform:none}
+.tablewrap{overflow-x:auto;border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:14px;border:1px solid var(--line)}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-weight:500;font-size:11.5px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-dim);background:var(--bg2)}
+tr:last-child td{border-bottom:none}
+td b{color:var(--accent);font-weight:600}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+.card{border:1px solid var(--line);border-radius:12px;padding:18px;background:var(--bg2)}
+.card b{font-family:var(--mono);color:var(--accent);font-size:12.5px;letter-spacing:.08em}
+.card h4{font-family:var(--disp);font-size:16px;margin:6px 0}
+.card p{color:var(--ink-dim);font-size:13.5px}
+pre{font-family:var(--mono);font-size:13px;line-height:1.7;background:var(--bg2);
+  border:1px solid var(--line);border-radius:12px;padding:18px;overflow-x:auto;position:relative}
+pre .c{color:#7d8f84}pre .k{color:var(--accent)}
+.copy{position:absolute;top:10px;right:10px;font-family:var(--mono);font-size:11px;
+  color:var(--ink-dim);background:var(--line);border:none;border-radius:7px;
+  padding:6px 10px;cursor:pointer}
+.copy:hover{color:var(--ink)}
+details{border:1px solid var(--line);border-radius:12px;padding:16px 20px;
+  margin-bottom:10px;background:var(--bg2)}
+summary{cursor:pointer;font-family:var(--disp);font-weight:600;font-size:15px;
+  list-style:none;display:flex;justify-content:space-between;gap:12px}
+summary::after{content:"+";font-family:var(--mono);color:var(--accent)}
+details[open] summary::after{content:"–"}
+details p{color:var(--ink-dim);font-size:14px;margin-top:10px;max-width:70ch}
+.rv{transition:opacity .6s ease,transform .6s ease}
+html.js .rv{opacity:0;transform:translateY(18px)}
+html.js .rv.in{opacity:1;transform:none}
+footer{padding:36px 0 60px;color:var(--ink-dim);font-size:13.5px}
+footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  .rv,.tree .row{opacity:1;transform:none}html{scroll-behavior:auto}}
+</style>
+<script>document.documentElement.classList.add('js')</script>
+</head>
+<body>
+<nav><div class="wrap">
+  <div class="mark">agent2<span>drive</span></div>
+  <div class="links">
+    <a href="#how">How it works</a><a href="#security">Security</a>
+    <a href="#quickstart">Quickstart</a>
+    <a href="https://github.com/Bilal140202/agent2drive">GitHub ↗</a>
+  </div>
+</div></nav>
+
+<header><div class="wrap">
+  <div class="kicker">paste-back OAuth · drive.file scope · MIT</div>
+  <h1>One command.<br><em>Your Drive.</em></h1>
+  <p class="lede">The whole agent-to-Google-Drive dance — consent URL,
+  the "unverified app" warning, the failing localhost redirect, the
+  single-use code — compressed into one script that any agent can run,
+  and that rebuilds itself when the sandbox around it disappears.</p>
+  <div class="cta">
+    <a class="btn primary" href="#quickstart">Get connected</a>
+    <a class="btn" href="https://github.com/Bilal140202/agent2drive">Source &amp; docs</a>
+  </div>
+  <div class="term rv" aria-label="animated terminal demo">
+    <div class="term-bar"><i></i><i></i><i></i></div>
+    <div class="term-body" id="term"></div>
+  </div>
+</div></header>
+
+<section id="how"><div class="wrap">
+  <div class="sec-head rv"><span class="num">01</span>
+    <h2>Why paste-back (and not a redirect server)</h2></div>
+  <p class="sec-sub rv">Google pins the OAuth redirect to
+  <code style="font-family:var(--mono)">http://127.0.0.1:53682/</code> — on <b style="color:var(--ink)">the
+  user's machine</b>. The agent runs headless in a sandbox, a different
+  machine entirely. A tunnel can't intercept it; a redirect server would
+  be extra attack surface. So the flow goes through the one channel both
+  humans and agents share: the chat.</p>
+  <div class="flow rv">
+    <div class="step"><span class="n">STEP 1</span><h3><code>url</code></h3>
+      <p>The script prints a consent URL — rclone's published default
+      client, narrowest scope Google offers (<code>drive.file</code>).</p></div>
+    <div class="step"><span class="n">STEP 2</span><h3>The user clicks Allow</h3>
+      <p>"Google hasn't verified this app" → Advanced → Go to rclone
+      (unsafe) → Allow. Expected for a public client.</p></div>
+    <div class="step"><span class="n">STEP 3</span><h3>Paste the address bar</h3>
+      <p>The browser "fails" on 127.0.0.1 — copy that full URL (it now
+      carries the code) and paste it back. <code>connect</code> does the rest.</p></div>
+  </div>
+  <div class="callout rv"><b>Why the browser "fails":</b> it isn't failing —
+  Google is redirecting to an address that only exists on the user's own
+  machine. That failed page is the expected path; the URL in the address
+  bar is the deliverable. The code is single-use and expires in ~10
+  minutes — exchange it <b>first</b>, before anything else.</div>
+</div></section>
+
+<section><div class="wrap">
+  <div class="sec-head rv"><span class="num">02</span>
+    <h2>Slots — where files land</h2></div>
+  <p class="sec-sub rv">Everything lives under one root folder
+  (<code style="font-family:var(--mono)">AgentDeliveries</code> by default,
+  <code style="font-family:var(--mono)">GDRIVE_ROOT</code> to change it), one folder per project,
+  one category per job. Uploads are verified byte-exact before the
+  script claims success.</p>
+  <div class="treegrid">
+    <div class="tree rv" id="tree">
+      <div class="row"><span class="dir">AgentDeliveries/</span></div>
+      <div class="row">├── <span class="dir">clipforge/</span></div>
+      <div class="row">│&nbsp;&nbsp;&nbsp;├── <span class="dir">master/</span> <span class="f">final renders</span></div>
+      <div class="row">│&nbsp;&nbsp;&nbsp;├── <span class="dir">shorts/</span> <span class="f">vertical cuts</span></div>
+      <div class="row">│&nbsp;&nbsp;&nbsp;├── <span class="dir">subtitles/</span> <span class="f">.srt · .vtt</span></div>
+      <div class="row">│&nbsp;&nbsp;&nbsp;├── <span class="dir">thumbnails/</span> <span class="f">covers</span></div>
+      <div class="row">│&nbsp;&nbsp;&nbsp;├── <span class="dir">assets/</span> <span class="f">transcripts, packs</span></div>
+      <div class="row">│&nbsp;&nbsp;&nbsp;├── <span class="dir">backups/</span> <span class="f">snapshots</span></div>
+      <div class="row">│&nbsp;&nbsp;&nbsp;└── <span class="f">MANIFEST.md</span></div>
+      <div class="row">└── <span class="dir">ep3-amelia/</span> <span class="f">…any project slug</span></div>
+    </div>
+    <div class="rv">
+      <div class="tablewrap"><table>
+        <tr><th>Command</th><th>What it does</th></tr>
+        <tr><td><b>(no args)</b></td><td>status; prints the connect recipe when not connected</td></tr>
+        <tr><td><b>status</b></td><td>live token check (<code>AUTH_OK</code> / <code>AUTH_MISSING</code>, exit 0/2)</td></tr>
+        <tr><td><b>url</b></td><td>builds + prints the consent URL</td></tr>
+        <tr><td><b>connect</b></td><td>exchanges the code, writes config (chmod 600), verifies quota live</td></tr>
+        <tr><td><b>init</b></td><td>creates the slot folder tree + MANIFEST.md</td></tr>
+        <tr><td><b>upload</b></td><td>uploads into a category and verifies the size byte-exact</td></tr>
+        <tr><td><b>ls</b></td><td>lists everything in the slot</td></tr>
+      </table></div>
+    </div>
+  </div>
+</div></section>
+
+<section id="security"><div class="wrap">
+  <div class="sec-head rv"><span class="num">03</span>
+    <h2>Security, plainly</h2></div>
+  <p class="sec-sub rv">Least privilege by design; honest about what is
+  stored where, and how to take it all back.</p>
+  <div class="grid2 rv">
+    <div class="card"><b>SCOPE</b><h4>drive.file only</h4>
+      <p>The agent can only see and manage files it created itself.
+      The rest of your Drive is invisible to it. Revoke any time:
+      myaccount.google.com → Security → Third-party apps.</p></div>
+    <div class="card"><b>STORAGE</b><h4>chmod 600, gitignored, never printed</h4>
+      <p>The refresh token lives in <code style="font-family:var(--mono)">state/rclone/rclone.conf</code>.
+      <code style="font-family:var(--mono)">state/</code>, <code style="font-family:var(--mono)">bin/</code>,
+      <code style="font-family:var(--mono)">.tmp/</code> are gitignored. No token is ever printed, logged, or committed.</p></div>
+    <div class="card"><b>CLIENT</b><h4>rclone's published default</h4>
+      <p>Open-source constants (client id + obscure-encoded secret),
+      derived from the binary at runtime and validated against Google's
+      token endpoint. Rate-limited and retiring during 2026 — bring your
+      own client for heavy use (rclone's guide is linked in the README).</p></div>
+    <div class="card"><b>RESILIENCE</b><h4>self-restoring</h4>
+      <p>Missing rclone → re-downloaded. Missing client → re-derived.
+      Only the refresh token is irreplaceable locally — and losing it
+      costs one fresh consent click. Nothing on Drive is ever affected.</p></div>
+  </div>
+</div></section>
+
+<section id="quickstart"><div class="wrap">
+  <div class="sec-head rv"><span class="num">04</span>
+    <h2>Quickstart</h2></div>
+  <pre class="rv"><button class="copy" data-copy="1">copy</button><span class="c"># check status (prints the connect recipe when not connected)</span>
+python3 agent2drive.py
+
+<span class="c"># one-time connect: give the user the URL, get the pasted redirect back</span>
+python3 agent2drive.py url
+python3 agent2drive.py connect 'http://127.0.0.1:53682/?...code=4/0A…'
+
+<span class="c"># then: slots and uploads, verified byte-exact</span>
+python3 agent2drive.py init my-project
+python3 agent2drive.py upload my-project ./final.mp4 master
+python3 agent2drive.py ls my-project</pre>
+</div></section>
+
+<section><div class="wrap">
+  <div class="sec-head rv"><span class="num">05</span>
+    <h2>FAQ</h2></div>
+  <details class="rv"><summary>Why does the browser "fail" after I click Allow?</summary>
+    <p>It isn't failing. Google redirects to 127.0.0.1:53682 — an address
+    that only exists on your machine. The failed page's URL is the code
+    carrier: copy the whole thing from the address bar and paste it back.</p></details>
+  <details class="rv"><summary>Can it see my other Drive files?</summary>
+    <p>No. The <code style="font-family:var(--mono)">drive.file</code> scope makes everything the agent
+    didn't create invisible to it. Uploads land only in
+    <code style="font-family:var(--mono)">GDRIVE_ROOT/&lt;slot&gt;/&lt;category&gt;</code>.</p></details>
+  <details class="rv"><summary>What happens when the sandbox is wiped?</summary>
+    <p>rclone re-downloads and the OAuth client re-derives automatically
+    on the next command. If the refresh token is gone, you click Allow
+    once more — your Drive contents are unaffected either way.</p></details>
+  <details class="rv"><summary>Windows or macOS?</summary>
+    <p>Self-restore downloads the Linux build by default; point
+    <code style="font-family:var(--mono)">RCLONE_ZIP</code> at your platform's zip and everything else
+    works identically.</p></details>
+</div></section>
+
+<footer><div class="wrap">
+  <div>agent2drive — MIT licensed. One command. Your Drive.</div>
+  <div><a href="https://github.com/Bilal140202/agent2drive">github.com/Bilal140202/agent2drive</a></div>
+</div></footer>
+
+<script>
+// terminal typing loop
+const LINES=[
+ ['<span class="u">$</span> python3 agent2drive.py','t'],
+ ['<span class="warn">AUTH_MISSING</span> — one-time connect:','w'],
+ ['  1. python3 agent2drive.py url','t'],
+ ['  2. user: open URL → Allow → copy the failed 127.0.0.1 URL','t'],
+ ['  3. python3 agent2drive.py connect \'<PASTED_URL>\'','t'],
+ ['<span class="u">$</span> python3 agent2drive.py connect \'…code=4/0A…\'','t'],
+ ['[agent2drive] CONF_WRITTEN (chmod 600)','w'],
+ ['<span class="ok">AUTH_OK</span> — Total: 131.712 GiB','w'],
+ ['<span class="u">$</span> python3 agent2drive.py upload clipforge clip.mp4 master','t'],
+ ['[agent2drive] size verify: local=17354173 remote=17354173 → <span class="ok">OK</span>','w'],
+];
+const term=document.getElementById('term');
+let li=0,ci=0,buf='',out='';
+function plain(html){const d=document.createElement('div');d.innerHTML=html;return d.textContent;}
+function tick(){
+  if(li>=LINES.length){setTimeout(()=>{li=0;ci=0;buf='';out='';tick();},2600);return;}
+  const [html,mode]=LINES[li],txt=plain(html);
+  if(mode==='t'){ // type char by char
+    buf='';out=LINES.slice(0,li).map(l=>l[0]).join('\n');
+    if(ci<=txt.length){buf=txt.slice(0,ci);render(out+(li?'\n':'')+'<span class="u">$</span> '+buf);ci+=1;setTimeout(tick,26);}
+    else{li++;ci=0;setTimeout(tick,120);}
+  }else{ // instant line (results)
+    out=LINES.slice(0,li).map(l=>l[0]).join('\n');
+    render(out+(li?'\n':'')+html);li++;ci=0;setTimeout(tick,420);
+  }
+}
+function render(inner){term.innerHTML=inner+'\n<span class="caret"></span>';}
+tick();
+// reveal
+const io=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}}),
+  {threshold:.12});
+document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+// tree rows cascade
+const tio=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting){
+    document.querySelectorAll('#tree .row').forEach((r,i)=>
+      setTimeout(()=>r.classList.add('in'),i*110));
+    tio.disconnect();}}),{threshold:.2});
+tio.observe(document.getElementById('tree'));
+// copy
+document.querySelectorAll('.copy').forEach(b=>b.addEventListener('click',()=>{
+  navigator.clipboard.writeText(b.parentElement.innerText.replace(/^copy\n?/,''))
+    .then(()=>{b.textContent='copied';setTimeout(()=>b.textContent='copy',1200);});
+}));
+</script>
+</body>
+</html>

@@ -14,8 +14,8 @@ when the sandbox around it disappears.
 python3 agent2drive.py                      # status — or the connect recipe
 python3 agent2drive.py url                  # print the consent URL
 python3 agent2drive.py connect '<PASTED_URL_OR_CODE>'
-python3 agent2drive.py init <slot>          # folder tree on your Drive
-python3 agent2drive.py upload <slot> <file> [category]
+python3 agent2drive.py init <slot>          # slot root + MANIFEST.md
+python3 agent2drive.py upload <slot> <file> [folder]
 python3 agent2drive.py ls <slot>
 ```
 
@@ -56,26 +56,34 @@ the whole ceremony.
 | `status` | checks the token live (`AUTH_OK` / `AUTH_MISSING`, exit 0/2) |
 | `url` | builds + prints the consent URL |
 | `connect <pasted>` | exchanges the code, writes the config, verifies |
-| `init <slot>` | creates the slot folder tree + MANIFEST.md on Drive |
-| `upload <slot> <file> [category]` | uploads and **verifies the size byte-exact** |
+| `init <slot>` | creates the slot root folder + MANIFEST.md on Drive |
+| `upload <slot> <file> [folder]` | uploads into any folder you name (created on demand) and **verifies the size byte-exact** |
 | `ls <slot>` | lists everything in the slot |
 
 ## Slots — where your files land
 
 Everything lives under one root folder (default `AgentDeliveries`;
-change with the `GDRIVE_ROOT` env var), one folder per project:
+change with the `GDRIVE_ROOT` env var), one folder per project.
+**agent2drive imposes no folder structure**: `init` creates only the
+slot root and a MANIFEST.md, and the first upload to any folder name
+creates that folder on demand:
 
 ```
 AgentDeliveries/
-  <slot>/                e.g. clipforge, ep3-amelia, q3-report
+  <slot>/                e.g. my-project, ep3-amelia, q3-report
     MANIFEST.md
-    master/              final long-form renders
-    shorts/              vertical cuts
-    subtitles/           .srt / .vtt
-    thumbnails/          covers, posters
-    assets/              transcripts, image packs, data
-    backups/             snapshots, manifests
+    <your folders>/       whatever names fit your project — or none
 ```
+
+```bash
+python3 agent2drive.py upload my-project report.pdf final
+python3 agent2drive.py upload my-project notes.md          # slot root
+python3 agent2drive.py upload ep3-amelia ep3.srt subs
+```
+
+The folder name is yours: `raw/`, `audio/`, `final/`, `2026-11/`,
+`drafts/` — anything that fits the project. One path component, no
+`/`, `\`, or `..`.
 
 ## Security — what is stored, what is possible
 
@@ -132,9 +140,10 @@ mean tunnels, public endpoints and extra attack surface. A pasted URL
 is zero infrastructure and the code is single-use with a ~10 minute TTL.
 
 **Can I upload anything anywhere on my Drive?**
-The script writes only inside `GDRIVE_ROOT/<slot>/<category>` and the
-`drive.file` scope hides everything else. Point `GDRIVE_ROOT` somewhere
-else if you prefer a different root folder name.
+The script writes only inside `GDRIVE_ROOT/<slot>` (and folders you
+name under it) and the `drive.file` scope hides everything else. Point
+`GDRIVE_ROOT` somewhere else if you prefer a different root folder
+name.
 
 **Windows / macOS?**
 The self-restore downloads the Linux build by default today; change

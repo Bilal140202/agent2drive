@@ -52,7 +52,14 @@ def test_consent_url_has_required_params():
     assert "prompt=consent" in url
 
 
-def test_categories_and_root():
-    assert a2d.CATEGORIES == ("master", "shorts", "subtitles",
-                              "thumbnails", "assets", "backups")
+def test_folders_are_user_defined():
+    """0.2.0: no imposed category tree — any single-component folder
+    name is valid; traversal and whitespace are not."""
+    assert a2d._check_folder(None) is None
+    assert a2d._check_folder("final") == "final"
+    assert a2d._check_folder("2026-11") == "2026-11"
+    assert a2d._check_folder("raw audio") == "raw audio"  # spaces inside ok
+    for bad in ("../escape", "a/b", "a\\b", "..", ".", "", " x", "x "):
+        with pytest.raises(SystemExit):
+            a2d._check_folder(bad)
     assert a2d.ROOT  # default AgentDeliveries unless env overrides

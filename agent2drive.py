@@ -7,7 +7,7 @@ Drive, and one command per upload afterwards.
     python3 agent2drive.py url             # print the consent URL
     python3 agent2drive.py connect '<PASTED_URL_OR_CODE>'
     python3 agent2drive.py init <slot>
-    python3 agent2drive.py upload <slot> <file> [category]
+    python3 agent2drive.py upload <slot> <file> [folder]
     python3 agent2drive.py ls <slot>
 
 Self-restoring: a missing rclone binary is re-downloaded, and the OAuth
@@ -43,8 +43,6 @@ ROOT = os.environ.get("GDRIVE_ROOT", "AgentDeliveries")
 
 RCLONE_ZIP = ("https://downloads.rclone.org/"
               "rclone-current-linux-amd64.zip")
-CATEGORIES = ("master", "shorts", "subtitles", "thumbnails", "assets",
-              "backups")
 REDIRECT = "http://127.0.0.1:53682/"
 SCOPE = "https://www.googleapis.com/auth/drive.file"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
@@ -72,7 +70,7 @@ def _ensure_rclone():
     STAGING.mkdir(parents=True, exist_ok=True)
     zip_path = STAGING / "rclone.zip"
     req = urllib.request.Request(
-        RCLONE_ZIP, headers={"User-Agent": "agent2drive/0.1.0"})
+        RCLONE_ZIP, headers={"User-Agent": "agent2drive/0.2.0"})
     with urllib.request.urlopen(req, timeout=300) as r:
         zip_path.write_bytes(r.read())
     with zipfile.ZipFile(zip_path) as z:
@@ -266,27 +264,39 @@ def status():
 
 
 def cmd_init(slot):
-    for cat in CATEGORIES:
-        _rc("mkdir", f"gdrive:{ROOT}/{slot}/{cat}")
+    _rc("mkdir", f"gdrive:{ROOT}/{slot}")
     _rc("rcat", f"gdrive:{ROOT}/{slot}/MANIFEST.md", stdin_data=(
         f"# {slot}\n\nSlot created by agent2drive (root={ROOT}).\n"
-        f"Categories: {', '.join(CATEGORIES)}.\n"))
+        "No folder structure is imposed — folders exist only when you\n"
+        "name one: upload <slot> <file> [folder], any folder you need.\n"))
     print(f"[agent2drive] slot ready: gdrive:{ROOT}/{slot}/")
 
 
-def cmd_upload(slot, path, category="master"):
-    if category not in CATEGORIES:
-        raise SystemExit(f"[agent2drive] category must be one of "
-                         f"{CATEGORIES}")
+def _check_folder(folder):
+    """agent2drive never imposes structure; any single path component
+    the user names is valid."""
+    if folder is None:
+        return None
+    if (not folder or folder in (".", "..") or "/" in folder
+            or "\\" in folder or folder.strip() != folder):
+        raise SystemExit(f"[agent2drive] invalid folder name: {folder!r} "
+                         "(one path component; no /, \\, '..', "
+                         "surrounding spaces)")
+    return folder
+
+
+def cmd_upload(slot, path, folder=None):
+    folder = _check_folder(folder)
     src = Path(path)
     if not src.is_file():
         raise SystemExit(f"[agent2drive] not a file: {src}")
-    remote = f"gdrive:{ROOT}/{slot}/{category}/{src.name}"
+    where = f"{slot}/{folder}" if folder else slot
+    remote = f"gdrive:{ROOT}/{where}/{src.name}"
     print(f"[agent2drive] uploading {src.name} ({src.stat().st_size} B) "
           f"-> {remote}")
     _rc("copyto", str(src), remote)
     items = json.loads(_rc("lsjson", "--files-only", "--recursive",
-                           f"gdrive:{ROOT}/{slot}/{category}",
+                           f"gdrive:{ROOT}/{where}",
                            timeout=300).stdout)
     rsize = next((i["Size"] for i in items if i["Name"] == src.name), None)
     ok = rsize == src.stat().st_size
@@ -326,7 +336,7 @@ def main(argv):
         return 0
     if cmd == "upload" and len(rest) >= 2:
         return cmd_upload(rest[0], rest[1],
-                          rest[2] if len(rest) > 2 else "master")
+                          rest[2] if len(rest) > 2 else None)
     if cmd == "ls" and rest:
         cmd_ls(rest[0])
         return 0

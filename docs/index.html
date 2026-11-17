@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>agent2drive — one command. your Drive.</title>
-<meta name="description" content="One command connects an agent to your Google Drive. Paste-back OAuth, drive.file scope, slot uploads with byte-exact verification, self-restoring after sandbox wipes.">
+<meta name="description" content="One command connects an agent to your Google Drive. Paste-back OAuth, drive.file scope, uploads to folders you choose with byte-exact verification, self-restoring after sandbox wipes.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -192,21 +192,18 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
     <h2>Slots — where files land</h2></div>
   <p class="sec-sub rv">Everything lives under one root folder
   (<code style="font-family:var(--mono)">AgentDeliveries</code> by default,
-  <code style="font-family:var(--mono)">GDRIVE_ROOT</code> to change it), one folder per project,
-  one category per job. Uploads are verified byte-exact before the
-  script claims success.</p>
+  <code style="font-family:var(--mono)">GDRIVE_ROOT</code> to change it), one folder per project.
+  No structure is imposed inside it — folders exist only when you name
+  one. Uploads are verified byte-exact before the script claims
+  success.</p>
   <div class="treegrid">
     <div class="tree rv" id="tree">
       <div class="row"><span class="dir">AgentDeliveries/</span></div>
-      <div class="row">├── <span class="dir">clipforge/</span></div>
-      <div class="row">│&nbsp;&nbsp;&nbsp;├── <span class="dir">master/</span> <span class="f">final renders</span></div>
-      <div class="row">│&nbsp;&nbsp;&nbsp;├── <span class="dir">shorts/</span> <span class="f">vertical cuts</span></div>
-      <div class="row">│&nbsp;&nbsp;&nbsp;├── <span class="dir">subtitles/</span> <span class="f">.srt · .vtt</span></div>
-      <div class="row">│&nbsp;&nbsp;&nbsp;├── <span class="dir">thumbnails/</span> <span class="f">covers</span></div>
-      <div class="row">│&nbsp;&nbsp;&nbsp;├── <span class="dir">assets/</span> <span class="f">transcripts, packs</span></div>
-      <div class="row">│&nbsp;&nbsp;&nbsp;├── <span class="dir">backups/</span> <span class="f">snapshots</span></div>
+      <div class="row">├── <span class="dir">my-project/</span></div>
+      <div class="row">│&nbsp;&nbsp;&nbsp;├── <span class="dir">final/</span> <span class="f">any name you chose</span></div>
+      <div class="row">│&nbsp;&nbsp;&nbsp;├── <span class="dir">raw/</span> <span class="f">created on demand, never imposed</span></div>
       <div class="row">│&nbsp;&nbsp;&nbsp;└── <span class="f">MANIFEST.md</span></div>
-      <div class="row">└── <span class="dir">ep3-amelia/</span> <span class="f">…any project slug</span></div>
+      <div class="row">└── <span class="dir">ep3-amelia/</span> <span class="f">…any project slug, any folders</span></div>
     </div>
     <div class="rv">
       <div class="tablewrap"><table>
@@ -215,8 +212,8 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
         <tr><td><b>status</b></td><td>live token check (<code>AUTH_OK</code> / <code>AUTH_MISSING</code>, exit 0/2)</td></tr>
         <tr><td><b>url</b></td><td>builds + prints the consent URL</td></tr>
         <tr><td><b>connect</b></td><td>exchanges the code, writes config (chmod 600), verifies quota live</td></tr>
-        <tr><td><b>init</b></td><td>creates the slot folder tree + MANIFEST.md</td></tr>
-        <tr><td><b>upload</b></td><td>uploads into a category and verifies the size byte-exact</td></tr>
+        <tr><td><b>init</b></td><td>creates the slot root folder + MANIFEST.md</td></tr>
+        <tr><td><b>upload</b></td><td>uploads to any folder you name (created on demand) and verifies the size byte-exact</td></tr>
         <tr><td><b>ls</b></td><td>lists everything in the slot</td></tr>
       </table></div>
     </div>
@@ -259,9 +256,10 @@ python3 agent2drive.py
 python3 agent2drive.py url
 python3 agent2drive.py connect 'http://127.0.0.1:53682/?...code=4/0A…'
 
-<span class="c"># then: slots and uploads, verified byte-exact</span>
+<span class="c"># then: folders you choose, uploads verified byte-exact</span>
 python3 agent2drive.py init my-project
-python3 agent2drive.py upload my-project ./final.mp4 master
+python3 agent2drive.py upload my-project ./report.pdf final
+python3 agent2drive.py upload my-project ./notes.md
 python3 agent2drive.py ls my-project</pre>
 </div></section>
 
@@ -275,7 +273,7 @@ python3 agent2drive.py ls my-project</pre>
   <details class="rv"><summary>Can it see my other Drive files?</summary>
     <p>No. The <code style="font-family:var(--mono)">drive.file</code> scope makes everything the agent
     didn't create invisible to it. Uploads land only in
-    <code style="font-family:var(--mono)">GDRIVE_ROOT/&lt;slot&gt;/&lt;category&gt;</code>.</p></details>
+    <code style="font-family:var(--mono)">GDRIVE_ROOT/&lt;slot&gt;[/&lt;your-folder&gt;]</code>.</p></details>
   <details class="rv"><summary>What happens when the sandbox is wiped?</summary>
     <p>rclone re-downloads and the OAuth client re-derives automatically
     on the next command. If the refresh token is gone, you click Allow
@@ -302,7 +300,7 @@ const LINES=[
  ['<span class="u">$</span> python3 agent2drive.py connect \'…code=4/0A…\'','t'],
  ['[agent2drive] CONF_WRITTEN (chmod 600)','w'],
  ['<span class="ok">AUTH_OK</span> — Total: 131.712 GiB','w'],
- ['<span class="u">$</span> python3 agent2drive.py upload clipforge clip.mp4 master','t'],
+ ['<span class="u">$</span> python3 agent2drive.py upload my-project report.pdf final','t'],
  ['[agent2drive] size verify: local=17354173 remote=17354173 → <span class="ok">OK</span>','w'],
 ];
 const term=document.getElementById('term');

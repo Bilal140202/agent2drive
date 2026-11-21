@@ -3,3 +3,6 @@ state/
 bin/
 .tmp/
 .pytest_cache/
+dist/
+build/
+*.egg-info/

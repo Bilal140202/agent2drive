@@ -27,7 +27,7 @@ except ImportError:  # MCP SDK v1
     from mcp.server.fastmcp import FastMCP as MCPServer  # type: ignore
     _V2 = False
 
-VERSION = "0.4.0"
+VERSION = "0.4.1"
 
 
 class A2DResult(BaseModel):

@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  pytest:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,6 +14,10 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: pip install -r requirements.txt pytest
+      - run: pip install -r requirements-dev.txt
       - name: Run test suite
         run: python -m pytest tests/ -v --tb=short
+      - name: Verify package build
+        run: |
+          pip install build
+          python -m build

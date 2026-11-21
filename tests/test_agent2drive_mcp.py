@@ -102,6 +102,6 @@ def test_config_resource_has_no_secrets(monkeypatch, tmp_path):
     monkeypatch.setenv("A2D_ALLOWED_ROOTS", str(tmp_path))
     monkeypatch.delenv("A2D_HOME", raising=False)
     data = json.loads(srv.config_resource())
-    assert data["version"] == "0.4.0"
+    assert data["version"] == "0.4.1"
     assert data["drive_root"] == "AgentDeliveries"
     assert str(tmp_path) in data["allowed_roots"]

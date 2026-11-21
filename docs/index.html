@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>agent2drive — one command. your Drive.</title>
-<meta name="description" content="One command connects an agent to your Google Drive. Paste-back OAuth, drive.file scope, uploads to folders you choose with byte-exact verification, self-restoring after sandbox wipes.">
+<meta name="description" content="One command connects an agent to your Google Drive. pip-installable, paste-back OAuth, drive.file scope, MD5+SHA-1 verified uploads, an audit manifest, cross-platform self-restore, and an optional MCP server.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -31,7 +31,7 @@ nav .wrap{display:flex;align-items:center;justify-content:space-between;height:6
 nav .links{display:flex;gap:20px;font-size:14px}
 nav .links a{color:var(--ink-dim)}
 nav .links a:hover{color:var(--ink);text-decoration:none}
-@media(max-width:560px){nav .links a:nth-child(3){display:none}}
+@media(max-width:640px){nav .links a:nth-child(3),nav .links a:nth-child(4){display:none}}
 header{padding:clamp(56px,10vw,110px) 0 clamp(40px,7vw,72px);
   border-bottom:1px solid var(--line)}
 .kicker{font-family:var(--mono);font-size:clamp(11px,1.6vw,13px);
@@ -39,7 +39,7 @@ header{padding:clamp(56px,10vw,110px) 0 clamp(40px,7vw,72px);
 h1{font-family:var(--disp);font-weight:700;letter-spacing:-.03em;
   line-height:1.02;font-size:clamp(2.6rem,7.5vw,5.2rem);max-width:16ch}
 h1 em{font-style:normal;color:var(--accent)}
-.lede{max-width:52ch;color:var(--ink-dim);font-size:clamp(15px,2.2vw,18px);
+.lede{max-width:58ch;color:var(--ink-dim);font-size:clamp(15px,2.2vw,18px);
   margin:22px 0 30px}
 .cta{display:inline-flex;gap:14px;flex-wrap:wrap}
 .btn{font-family:var(--disp);font-weight:600;font-size:15px;padding:12px 22px;
@@ -57,7 +57,7 @@ h1 em{font-style:normal;color:var(--accent)}
   display:block}
 .term-bar i:first-child{background:#e35d5d}.term-bar i:nth-child(2){background:#e3b95d}
 .term-body{font-family:var(--mono);font-size:clamp(12px,1.7vw,14px);
-  line-height:1.8;padding:18px;min-height:15.5em;white-space:pre-wrap}
+  line-height:1.8;padding:18px;min-height:16.5em;white-space:pre-wrap}
 .term-body .u{color:var(--ink-dim)}
 .term-body .ok{color:var(--accent)}
 .term-body .warn{color:#e3b95d}
@@ -69,7 +69,7 @@ section{padding:clamp(48px,8vw,90px) 0;border-bottom:1px solid var(--line)}
 .num{font-family:var(--mono);color:var(--accent);font-size:14px}
 h2{font-family:var(--disp);font-weight:700;letter-spacing:-.02em;
   font-size:clamp(1.7rem,4.4vw,2.6rem)}
-.sec-sub{color:var(--ink-dim);max-width:62ch;margin-bottom:clamp(24px,4vw,40px)}
+.sec-sub{color:var(--ink-dim);max-width:66ch;margin-bottom:clamp(24px,4vw,40px)}
 /* flow */
 .flow{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 @media(max-width:760px){.flow{grid-template-columns:1fr}}
@@ -137,21 +137,24 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
 <nav><div class="wrap">
   <div class="mark">agent2<span>drive</span></div>
   <div class="links">
-    <a href="#how">How it works</a><a href="#security">Security</a>
-    <a href="#quickstart">Quickstart</a>
+    <a href="#how">How it works</a><a href="#verify">Verification</a>
+    <a href="#mcp">MCP</a><a href="#quickstart">Install</a>
     <a href="https://github.com/Bilal140202/agent2drive">GitHub ↗</a>
   </div>
 </div></nav>
 
 <header><div class="wrap">
-  <div class="kicker">paste-back OAuth · drive.file scope · MIT</div>
+  <div class="kicker">pip install · paste-back OAuth · drive.file scope · MCP</div>
   <h1>One command.<br><em>Your Drive.</em></h1>
   <p class="lede">The whole agent-to-Google-Drive dance — consent URL,
   the "unverified app" warning, the failing localhost redirect, the
-  single-use code — compressed into one script that any agent can run,
-  and that rebuilds itself when the sandbox around it disappears.</p>
+  single-use code — compressed into one pip-installable command. Every
+  upload is verified by size <b style="color:var(--ink)">and hash</b>, logged
+  in a manifest, and reviewable in your Drive. An optional MCP server
+  lets agents do it all with tool calls.</p>
   <div class="cta">
-    <a class="btn primary" href="#quickstart">Get connected</a>
+    <a class="btn primary" href="#quickstart">Install it</a>
+    <a class="btn" href="#mcp">MCP server</a>
     <a class="btn" href="https://github.com/Bilal140202/agent2drive">Source &amp; docs</a>
   </div>
   <div class="term rv" aria-label="animated terminal demo">
@@ -170,15 +173,17 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
   be extra attack surface. So the flow goes through the one channel both
   humans and agents share: the chat.</p>
   <div class="flow rv">
-    <div class="step"><span class="n">STEP 1</span><h3><code>url</code></h3>
-      <p>The script prints a consent URL — rclone's published default
-      client, narrowest scope Google offers (<code>drive.file</code>).</p></div>
+    <div class="step"><span class="n">STEP 1</span><h3><code>agent2drive url</code></h3>
+      <p>Prints a consent URL with a random one-time state nonce and the
+      narrowest scope Google offers (<code>drive.file</code>). Bring your own
+      OAuth client with <code>client</code> — recommended.</p></div>
     <div class="step"><span class="n">STEP 2</span><h3>The user clicks Allow</h3>
       <p>"Google hasn't verified this app" → Advanced → Go to rclone
-      (unsafe) → Allow. Expected for a public client.</p></div>
+      (unsafe) → Allow. Expected for rclone's published public client.</p></div>
     <div class="step"><span class="n">STEP 3</span><h3>Paste the address bar</h3>
       <p>The browser "fails" on 127.0.0.1 — copy that full URL (it now
-      carries the code) and paste it back. <code>connect</code> does the rest.</p></div>
+      carries the code) and paste it back. <code>connect --stdin</code>
+      exchanges it before the 10-minute expiry.</p></div>
   </div>
   <div class="callout rv"><b>Why the browser "fails":</b> it isn't failing —
   Google is redirecting to an address that only exists on the user's own
@@ -194,34 +199,59 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
   (<code style="font-family:var(--mono)">AgentDeliveries</code> by default,
   <code style="font-family:var(--mono)">GDRIVE_ROOT</code> to change it), one folder per project.
   No structure is imposed inside it — folders exist only when you name
-  one. Uploads are verified byte-exact before the script claims
-  success.</p>
+  one. Slot names are validated; traversal is rejected.</p>
   <div class="treegrid">
     <div class="tree rv" id="tree">
       <div class="row"><span class="dir">AgentDeliveries/</span></div>
       <div class="row">├── <span class="dir">my-project/</span></div>
       <div class="row">│&nbsp;&nbsp;&nbsp;├── <span class="dir">final/</span> <span class="f">any name you chose</span></div>
       <div class="row">│&nbsp;&nbsp;&nbsp;├── <span class="dir">raw/</span> <span class="f">created on demand, never imposed</span></div>
-      <div class="row">│&nbsp;&nbsp;&nbsp;└── <span class="f">MANIFEST.md</span></div>
-      <div class="row">└── <span class="dir">ep3-amelia/</span> <span class="f">…any project slug, any folders</span></div>
+      <div class="row">│&nbsp;&nbsp;&nbsp;└── <span class="f">MANIFEST.md</span> <span class="f">audit trail</span></div>
+      <div class="row">└── <span class="dir">canvas/</span> <span class="f">your review slot</span></div>
     </div>
     <div class="rv">
       <div class="tablewrap"><table>
         <tr><th>Command</th><th>What it does</th></tr>
-        <tr><td><b>(no args)</b></td><td>status; prints the connect recipe when not connected</td></tr>
         <tr><td><b>status</b></td><td>live token check (<code>AUTH_OK</code> / <code>AUTH_MISSING</code>, exit 0/2)</td></tr>
-        <tr><td><b>url</b></td><td>builds + prints the consent URL</td></tr>
-        <tr><td><b>connect</b></td><td>exchanges the code, writes config (chmod 600), verifies quota live</td></tr>
-        <tr><td><b>init</b></td><td>creates the slot root folder + MANIFEST.md</td></tr>
-        <tr><td><b>upload</b></td><td>uploads to any folder you name (created on demand) and verifies the size byte-exact</td></tr>
-        <tr><td><b>ls</b></td><td>lists everything in the slot</td></tr>
+        <tr><td><b>url</b></td><td>prints the consent URL + stores a one-time state nonce</td></tr>
+        <tr><td><b>client</b></td><td>sets your own OAuth client id/secret (prompts, never prints)</td></tr>
+        <tr><td><b>connect</b></td><td>exchanges the pasted URL, writes chmod-600 config, verifies quota</td></tr>
+        <tr><td><b>init</b></td><td>creates the slot root + MANIFEST.md</td></tr>
+        <tr><td><b>upload</b></td><td>verifies size + MD5 + SHA-1, logs a manifest row; <code>--replace</code> to overwrite</td></tr>
+        <tr><td><b>ls / manifest</b></td><td>list files / print the delivery history</td></tr>
       </table></div>
     </div>
   </div>
 </div></section>
 
-<section id="security"><div class="wrap">
+<section id="verify"><div class="wrap">
   <div class="sec-head rv"><span class="num">03</span>
+    <h2>Verified by hash, not just size</h2></div>
+  <p class="sec-sub rv">Earlier releases only compared file sizes. 0.3.0
+  made the promise real: Google Drive serves MD5 and SHA-1 natively, so
+  the tool compares both against the local file, plus the byte count.
+  A mismatch removes the remote copy and fails loudly. Nothing is written
+  to the manifest unless verification passes.</p>
+  <div class="grid2 rv">
+    <div class="card"><b>THREE CHECKS</b><h4>size · MD5 · SHA-1</h4>
+      <p><code>verified: size True · md5 True · sha1 True → OK</code>.
+      If hashes can't be read, the result is <code>SIZE-ONLY</code> and the
+      command exits non-zero — never a silent fake success.</p></div>
+    <div class="card"><b>OVERWRITE GATE</b><h4>no silent replacements</h4>
+      <p>A same-name upload fails by default. Pass <code>--replace</code>
+      (CLI) or <code>confirm='REPLACE'</code> (MCP) to overwrite deliberately.</p></div>
+    <div class="card"><b>AUDIT TRAIL</b><h4>MANIFEST.md per slot</h4>
+      <p>Every verified delivery appends UTC time, filename, folder, bytes,
+      MD5, SHA-1 and result. Read it with <code>agent2drive manifest &lt;slot&gt;</code>.</p></div>
+    <div class="card"><b>CROSS-PLATFORM</b><h4>self-restoring, correctly</h4>
+      <p>Missing or wrong-arch rclone is re-downloaded for linux/macOS/Windows
+      on amd64/arm64 and checked before use. <code>A2D_HOME</code> keeps pip
+      installs out of <code>site-packages</code>.</p></div>
+  </div>
+</div></section>
+
+<section id="security"><div class="wrap">
+  <div class="sec-head rv"><span class="num">04</span>
     <h2>Security, plainly</h2></div>
   <p class="sec-sub rv">Least privilege by design; honest about what is
   stored where, and how to take it all back.</p>
@@ -234,37 +264,82 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
       <p>The refresh token lives in <code style="font-family:var(--mono)">state/rclone/rclone.conf</code>.
       <code style="font-family:var(--mono)">state/</code>, <code style="font-family:var(--mono)">bin/</code>,
       <code style="font-family:var(--mono)">.tmp/</code> are gitignored. No token is ever printed, logged, or committed.</p></div>
-    <div class="card"><b>CLIENT</b><h4>rclone's published default</h4>
-      <p>Open-source constants (client id + obscure-encoded secret),
-      derived from the binary at runtime and validated against Google's
-      token endpoint. Rate-limited and retiring during 2026 — bring your
-      own client for heavy use (rclone's guide is linked in the README).</p></div>
+    <div class="card"><b>CLIENT</b><h4>bring your own (recommended)</h4>
+      <p>rclone's published default still works as a fallback, but it is
+      rate-limited and retiring during 2026. Use <code>agent2drive client</code>
+      with your own Desktop OAuth client id + secret.</p></div>
+    <div class="card"><b>OAUTH STATE</b><h4>random, one-time, 15-minute TTL</h4>
+      <p><code>url</code> issues a nonce; <code>connect</code> verifies and
+      consumes it. Replayed or expired pastes are rejected. Use
+      <code>--stdin</code> so codes never land in shell history.</p></div>
     <div class="card"><b>RESILIENCE</b><h4>self-restoring</h4>
-      <p>Missing rclone → re-downloaded. Missing client → re-derived.
-      Only the refresh token is irreplaceable locally — and losing it
-      costs one fresh consent click. Nothing on Drive is ever affected.</p></div>
+      <p>Missing rclone → re-downloaded for your CPU. Only the refresh
+      token is irreplaceable locally — losing it costs one fresh consent
+      click. Nothing on Drive is ever affected.</p></div>
+    <div class="card"><b>MCP SAFETY</b><h4>stdio, allowlist, redaction</h4>
+      <p>No HTTP listener. <code>A2D_ALLOWED_ROOTS</code> restricts which
+      local files an agent can upload, overwrites need explicit
+      confirmation, and secrets never appear in tool results.</p></div>
   </div>
 </div></section>
 
+<section id="mcp"><div class="wrap">
+  <div class="sec-head rv"><span class="num">05</span>
+    <h2>Optional MCP server</h2></div>
+  <p class="sec-sub rv">From 0.4.0, the same workflow is available as an
+  MCP stdio server. Eight tools, two resources and a delivery prompt;
+  in OpenCode they appear as <code>tools.agent2drive.a2d_upload(...)</code>.
+  Core <code>print()</code> output is captured into structured results so
+  it can't corrupt the JSON-RPC stream.</p>
+  <pre class="rv"><button class="copy" data-copy="1">copy</button><span class="c"># install with the MCP extra</span>
+pipx install 'agent2drive[mcp]'
+
+<span class="c"># register as a local stdio server in OpenCode</span>
+opencode mcp add agent2drive -- agent2drive-mcp
+
+<span class="c"># optional: restrict which local folders agents may upload from</span>
+opencode mcp add agent2drive \
+  --env A2D_HOME=~/.config/agent2drive \
+  --env A2D_ALLOWED_ROOTS=~/projects \
+  -- agent2drive-mcp</pre>
+  <div class="tablewrap rv" style="margin-top:18px"><table>
+    <tr><th>Tool</th><th>Purpose</th></tr>
+    <tr><td><b>a2d_status / a2d_connect</b></td><td>check auth / exchange the user's pasted redirect URL</td></tr>
+    <tr><td><b>a2d_set_client / a2d_consent_url</b></td><td>configure your own client / get the consent link</td></tr>
+    <tr><td><b>a2d_init_slot / a2d_upload</b></td><td>create a slot / upload with hash verification and manifest row</td></tr>
+    <tr><td><b>a2d_list / a2d_manifest</b></td><td>list files / read the delivery audit trail</td></tr>
+  </table></div>
+  <p class="sec-sub rv" style="margin-top:18px">Full design, resources, prompt and security notes:
+  <a href="https://github.com/Bilal140202/agent2drive/blob/main/docs/MCP.md">docs/MCP.md ↗</a></p>
+</div></section>
+
 <section id="quickstart"><div class="wrap">
-  <div class="sec-head rv"><span class="num">04</span>
-    <h2>Quickstart</h2></div>
-  <pre class="rv"><button class="copy" data-copy="1">copy</button><span class="c"># check status (prints the connect recipe when not connected)</span>
-python3 agent2drive.py
+  <div class="sec-head rv"><span class="num">06</span>
+    <h2>Install &amp; quickstart</h2></div>
+  <pre class="rv"><button class="copy" data-copy="1">copy</button><span class="c"># install (pipx recommended)</span>
+pipx install 'agent2drive[mcp]'
+<span class="c"># or: python3 -m pip install --user 'agent2drive[mcp]'</span>
 
-<span class="c"># one-time connect: give the user the URL, get the pasted redirect back</span>
-python3 agent2drive.py url
-python3 agent2drive.py connect 'http://127.0.0.1:53682/?...code=4/0A…'
+<span class="c"># one-time: use your own OAuth client (recommended)</span>
+agent2drive client &lt;client_id&gt; &lt;client_secret&gt;
+agent2drive url
+agent2drive connect --stdin   <span class="c"># paste the failed 127.0.0.1 URL</span>
+agent2drive status
 
-<span class="c"># then: folders you choose, uploads verified byte-exact</span>
-python3 agent2drive.py init my-project
-python3 agent2drive.py upload my-project ./report.pdf final
-python3 agent2drive.py upload my-project ./notes.md
-python3 agent2drive.py ls my-project</pre>
+<span class="c"># create a review slot and deliver files</span>
+agent2drive init canvas
+agent2drive upload canvas ./report.pdf final
+agent2drive upload canvas ./notes.md
+agent2drive manifest canvas
+
+<span class="c"># or let an agent bootstrap the whole thing</span>
+curl -fsSL https://raw.githubusercontent.com/Bilal140202/agent2drive/main/install.sh | sh</pre>
+  <p class="sec-sub rv" style="margin-top:18px">Copy-paste agent prompt:
+  <a href="https://github.com/Bilal140202/agent2drive/blob/main/AGENT_SETUP.md">AGENT_SETUP.md ↗</a></p>
 </div></section>
 
 <section><div class="wrap">
-  <div class="sec-head rv"><span class="num">05</span>
+  <div class="sec-head rv"><span class="num">07</span>
     <h2>FAQ</h2></div>
   <details class="rv"><summary>Why does the browser "fail" after I click Allow?</summary>
     <p>It isn't failing. Google redirects to 127.0.0.1:53682 — an address
@@ -274,46 +349,58 @@ python3 agent2drive.py ls my-project</pre>
     <p>No. The <code style="font-family:var(--mono)">drive.file</code> scope makes everything the agent
     didn't create invisible to it. Uploads land only in
     <code style="font-family:var(--mono)">GDRIVE_ROOT/&lt;slot&gt;[/&lt;your-folder&gt;]</code>.</p></details>
+  <details class="rv"><summary>What does "verified" actually mean?</summary>
+    <p>Local file size, MD5 and SHA-1 are compared with the uploaded copy.
+    Drive serves both hashes natively. A mismatch deletes the remote copy
+    and fails; unavailable hashes produce <code>SIZE-ONLY</code> with a
+    non-zero exit. Hashes detect corruption, not adversarial tampering.</p></details>
   <details class="rv"><summary>What happens when the sandbox is wiped?</summary>
-    <p>rclone re-downloads and the OAuth client re-derives automatically
-    on the next command. If the refresh token is gone, you click Allow
-    once more — your Drive contents are unaffected either way.</p></details>
-  <details class="rv"><summary>Windows or macOS?</summary>
-    <p>Self-restore downloads the Linux build by default; point
-    <code style="font-family:var(--mono)">RCLONE_ZIP</code> at your platform's zip and everything else
-    works identically.</p></details>
+    <p>rclone re-downloads for your CPU and the OAuth client re-derives
+    automatically on the next command. If the refresh token is gone, you
+    click Allow once more — your Drive contents are unaffected either way.</p></details>
+  <details class="rv"><summary>Windows, macOS, or ARM?</summary>
+    <p>Handled automatically since 0.3.0: the correct rclone build is
+    detected and downloaded for linux/macOS/Windows on amd64 or arm64.
+    Override with <code style="font-family:var(--mono)">RCLONE_ZIP</code> for unusual platforms.</p></details>
+  <details class="rv"><summary>Where are tokens stored for a pip install?</summary>
+    <p>Under <code style="font-family:var(--mono)">~/.config/agent2drive/</code> (XDG), or
+    <code style="font-family:var(--mono)">A2D_HOME</code> if set. Nothing is written into
+    <code style="font-family:var(--mono)">site-packages</code>. Source checkouts keep state beside the code.</p></details>
 </div></section>
 
 <footer><div class="wrap">
   <div>agent2drive — MIT licensed. One command. Your Drive.</div>
-  <div><a href="https://github.com/Bilal140202/agent2drive">github.com/Bilal140202/agent2drive</a></div>
+  <div>
+    <a href="https://pypi.org/project/agent2drive/">PyPI ↗</a> ·
+    <a href="https://github.com/Bilal140202/agent2drive/blob/main/README.md">README ↗</a> ·
+    <a href="https://github.com/Bilal140202/agent2drive">github.com/Bilal140202/agent2drive</a>
+  </div>
 </div></footer>
 
 <script>
 // terminal typing loop
 const LINES=[
- ['<span class="u">$</span> python3 agent2drive.py','t'],
- ['<span class="warn">AUTH_MISSING</span> — one-time connect:','w'],
- ['  1. python3 agent2drive.py url','t'],
- ['  2. user: open URL → Allow → copy the failed 127.0.0.1 URL','t'],
- ['  3. python3 agent2drive.py connect \'<PASTED_URL>\'','t'],
- ['<span class="u">$</span> python3 agent2drive.py connect \'…code=4/0A…\'','t'],
- ['[agent2drive] CONF_WRITTEN (chmod 600)','w'],
- ['<span class="ok">AUTH_OK</span> — Total: 131.712 GiB','w'],
- ['<span class="u">$</span> python3 agent2drive.py upload my-project report.pdf final','t'],
- ['[agent2drive] size verify: local=17354173 remote=17354173 → <span class="ok">OK</span>','w'],
+  ['<span class="u">$</span> pipx install \'agent2drive[mcp]\'','t'],
+  ['<span class="ok">✓</span> installed agent2drive 0.4.1','w'],
+  ['<span class="u">$</span> agent2drive url','t'],
+  ['<span class="u">$</span> agent2drive connect --stdin  <span class="u"># pasted URL</span>','t'],
+  ['[agent2drive] CONF_WRITTEN (chmod 600)','w'],
+  ['<span class="ok">AUTH_OK</span> — Other: 242.994 GiB','w'],
+  ['<span class="u">$</span> agent2drive upload canvas report.pdf final','t'],
+  ['[agent2drive] verified: size True · md5 True · sha1 True → <span class="ok">OK</span>','w'],
+  ['[agent2drive] manifest updated: .../canvas/MANIFEST.md','w'],
 ];
 const term=document.getElementById('term');
 let li=0,ci=0,buf='',out='';
 function plain(html){const d=document.createElement('div');d.innerHTML=html;return d.textContent;}
 function tick(){
-  if(li>=LINES.length){setTimeout(()=>{li=0;ci=0;buf='';out='';tick();},2600);return;}
+  if(li>=LINES.length){setTimeout(()=>{li=0;ci=0;buf='';out='';tick();},3200);return;}
   const [html,mode]=LINES[li],txt=plain(html);
-  if(mode==='t'){ // type char by char
+  if(mode==='t'){
     buf='';out=LINES.slice(0,li).map(l=>l[0]).join('\n');
-    if(ci<=txt.length){buf=txt.slice(0,ci);render(out+(li?'\n':'')+'<span class="u">$</span> '+buf);ci+=1;setTimeout(tick,26);}
+    if(ci<=txt.length){buf=txt.slice(0,ci);render(out+(li?'\n':'')+'<span class="u">$</span> '+buf);ci+=1;setTimeout(tick,24);}
     else{li++;ci=0;setTimeout(tick,120);}
-  }else{ // instant line (results)
+  }else{
     out=LINES.slice(0,li).map(l=>l[0]).join('\n');
     render(out+(li?'\n':'')+html);li++;ci=0;setTimeout(tick,420);
   }

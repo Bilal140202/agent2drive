@@ -4,12 +4,14 @@
 
 An agent writes files locally; you review them in Drive. No video-generation model, no stock footage, no public redirect server, no broad Drive access — just a narrow `drive.file` scope and a paste-back OAuth code.
 
+**Live site:** <https://bilal140202.github.io/agent2drive/>
+
 ## Install
 
 ```sh
-pipx install agent2drive                 # recommended
+pipx install 'agent2drive[mcp]'                 # recommended (includes MCP server)
 # or
-python3 -m pip install --user agent2drive
+python3 -m pip install --user 'agent2drive[mcp]'
 ```
 
 One-line bootstrap for an agent to run for you:
@@ -30,7 +32,7 @@ agent2drive url
 ```
 
 1. Give the user the printed consent URL.
-2. They click **Allow**. Google may warn " hasn't verified this app" → **Advanced → Go to rclone (unsafe) → Allow**.
+2. They click **Allow**. Google may warn "Google hasn't verified this app" → **Advanced → Go to rclone (unsafe) → Allow**.
 3. The browser fails to load `127.0.0.1:53682`. **That failure is expected** — it only runs on the user's machine. They copy the full address-bar URL and paste it back.
 4. You exchange it immediately (single-use, ~10-minute TTL):
 
@@ -85,7 +87,7 @@ A missing or wrong-architecture rclone binary is re-downloaded for the current p
 
 The refresh token in `state/rclone/rclone.conf` (chmod 600, gitignored) is the only thing that can't be rebuilt. Lose it and one fresh consent click restores everything; nothing already on Drive is affected.
 
-State lives beside the source in a checkout, and in `~/.config/agent2drive/` for a pip/pixi install (override with `A2D_HOME`, or `XDG_CONFIG_HOME`). Nothing is ever written into `site-packages`.
+State lives beside the source in a checkout, and in `~/.config/agent2drive/` for a pip/pipx install (override with `A2D_HOME`, or `XDG_CONFIG_HOME`). Nothing is ever written into `site-packages`.
 
 ## Security
 
@@ -113,7 +115,7 @@ python3 -m pip install -r requirements-dev.txt
 python3 -m pytest -q
 ```
 
-Tests cover pure logic plus injected-rclone failure paths (hash mismatch, missing hashes, collisions, retries, state replay, and the post-connect crash regression).
+Tests cover pure logic plus injected-rclone failure paths (hash mismatch, missing hashes, collisions, retries, state replay, and the post-connect crash regression), and the MCP adapter with a live stdio handshake. CI also builds the wheel and sdist on every push.
 
 ## License
 

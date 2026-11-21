@@ -11,14 +11,14 @@ fi
 
 install_pkg() {
   # Prefer a published release; fall back to the canonical GitHub source.
-  "$PYTHON" -m pip install --user "$@" agent2drive 2>/dev/null || \
+  "$PYTHON" -m pip install --user "$@" 'agent2drive[mcp]' 2>/dev/null || \
   "$PYTHON" -m pip install --user \
-    "agent2drive @ git+https://github.com/Bilal140202/agent2drive.git@main"
+    'agent2drive[mcp] @ git+https://github.com/Bilal140202/agent2drive.git@main'
 }
 
 if command -v pipx >/dev/null 2>&1; then
-  pipx install agent2drive 2>/dev/null || \
-    pipx install "git+https://github.com/Bilal140202/agent2drive.git@main"
+  pipx install 'agent2drive[mcp]' 2>/dev/null || \
+    pipx install 'agent2drive[mcp] @ git+https://github.com/Bilal140202/agent2drive.git@main'
 else
   install_pkg || install_pkg --break-system-packages
 fi

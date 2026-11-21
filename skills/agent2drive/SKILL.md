@@ -16,6 +16,9 @@ Deliver files into the user's Google Drive so they can review them.
 3. Run `agent2drive url` and give the user the URL. They click Allow; the browser "fails" on `127.0.0.1:53682` — expected. They paste the full address-bar URL back.
 4. Exchange it immediately: `agent2drive connect --stdin` with the pasted URL on stdin, then `agent2drive status`.
 5. Ask for a slot name (default `canvas`) and run `agent2drive init <slot>`.
+6. If the host supports MCP, register the server:
+   `opencode mcp add agent2drive -- agent2drive-mcp`, and set
+   `A2D_ALLOWED_ROOTS` to the directory you may upload from.
 
 ## Every delivery
 
@@ -30,3 +33,5 @@ Deliver files into the user's Google Drive so they can review them.
 - Scope is `drive.file`; never ask for broader Drive access.
 - Tokens and client secrets are chmod 600 and gitignored. Never echo them.
 - The OAuth state nonce is one-time; if `connect` reports a mismatch, generate a fresh URL.
+- MCP tools never return secrets; auth still requires the user's click and paste. Uploads require `confirm='REPLACE'` to overwrite.
+- Full docs: <https://bilal140202.github.io/agent2drive/> and `docs/MCP.md`.

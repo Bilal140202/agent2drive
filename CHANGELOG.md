@@ -2,6 +2,14 @@
 
 All notable changes. Dates are UTC.
 
+## [0.4.1] - 2026-11-21
+
+### Changed
+- Documentation-only refresh: the GitHub Pages site now covers pip install, hash verification, the manifest, the own-client flow, cross-platform restore, `A2D_HOME`, and the MCP server with copy-paste setup.
+- README, agent setup prompt, drop-in skill, and PyPI description now agree with the 0.4.0 feature set.
+- `install.sh` installs the `mcp` extra by default.
+- CI installs `requirements-dev.txt` and verifies the package build on every push.
+
 ## [0.4.0] - 2026-11-21
 
 ### Added

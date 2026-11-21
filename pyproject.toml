@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent2drive"
-version = "0.4.0"
+version = "0.4.1"
 description = "One command connects an agent to Google Drive; one command per verified, reviewable upload (optional MCP server)."
 readme = "README.md"
 requires-python = ">=3.10"

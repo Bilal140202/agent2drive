@@ -1,13 +1,13 @@
 [build-system]
-requires = ["hatchling>=1.21"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent2drive"
-version = "0.3.0"
-description = "One command connects an agent to Google Drive; one command per verified, reviewable upload."
+version = "0.4.0"
+description = "One command connects an agent to Google Drive; one command per verified, reviewable upload (optional MCP server)."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [{ name = "Ansari Bilal", email = "ansaribilal0709@gmail.com" }]
 keywords = ["google-drive", "agent", "oauth", "rclone", "deliverables", "mcp"]
@@ -28,11 +28,12 @@ dev = ["pytest>=7", "build>=1"]
 
 [project.scripts]
 agent2drive = "agent2drive:cli"
+agent2drive-mcp = "agent2drive_mcp:main"
 
 [project.urls]
 Homepage = "https://github.com/Bilal140202/agent2drive"
 Repository = "https://github.com/Bilal140202/agent2drive"
 Issues = "https://github.com/Bilal140202/agent2drive/issues"
 
-[tool.hatch.build.targets.wheel]
-modules = ["agent2drive.py"]
+[tool.setuptools]
+py-modules = ["agent2drive", "agent2drive_mcp"]

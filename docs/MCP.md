@@ -1,70 +1,100 @@
-# MCP plan (proposed)
+# MCP server
 
-Goal: let an agent deliver files to Google Drive through MCP tool calls instead of shell commands, while keeping the user's Google credentials completely out of the model's context.
+Implemented in **0.4.0**. The server is a thin stdio adapter over the core `agent2drive.py` functions — there is no second OAuth or verification implementation.
 
-## Design principles
+## Install
 
-1. **stdio transport only, initially.** No HTTP listener, no network attack surface. The agent launches `agent2drive-mcp` as a local child process.
-2. **User-mediated auth.** The model may call `a2d_consent_url`, but only the user can click Allow and paste the redirect. `a2d_connect` accepts that pasted URL once. Tokens and client secrets are never returned by a tool.
-3. **Reuse the core module.** The MCP server is a thin adapter over the functions in `agent2drive.py` (`status`, `exchange`, `cmd_init`, `cmd_upload`, `cmd_ls`, `cmd_manifest`). No second implementation of the OAuth or verification logic.
-4. **Explicit destructive actions.** Overwrites and deletes require an explicit `replace: true` plus a confirmation token from the host app.
-
-## Prerequisite (done in 0.3.0)
-
-State must not live in `site-packages`. `A2D_HOME` (falling back to XDG config for pip installs) now controls where `state/`, `bin/` and `.tmp/` live, so a pip-installed MCP server and the CLI share one token store.
-
-## Packaging
-
-```toml
-[project.optional-dependencies]
-mcp = ["mcp>=1.0"]
-
-[project.scripts]
-agent2drive-mcp = "agent2drive_mcp:main"
+```sh
+pipx install 'agent2drive[mcp]'
+# or: python3 -m pip install --user 'agent2drive[mcp]'
 ```
 
-Install with `pipx install 'agent2drive[mcp]'` or `pip install 'agent2drive[mcp]'`.
+Confirm it starts: `agent2drive-mcp` (it speaks JSON-RPC on stdio and prints nothing else).
+
+## OpenCode setup
+
+```sh
+opencode mcp add agent2drive -- agent2drive-mcp
+```
+
+With environment variables:
+
+```sh
+opencode mcp add agent2drive \
+  --env A2D_HOME=/home/ubuntu/.config/agent2drive \
+  --env A2D_ALLOWED_ROOTS=/home/ubuntu/projects \
+  -- agent2drive-mcp
+```
+
+Hand-written config:
+
+```jsonc title="opencode.jsonc"
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "servers": {
+      "agent2drive": {
+        "type": "local",
+        "command": ["agent2drive-mcp"],
+        "environment": {
+          "A2D_HOME": "{env:A2D_HOME}",
+          "A2D_ALLOWED_ROOTS": "{env:A2D_ALLOWED_ROOTS}"
+        }
+      }
+    }
+  }
+}
+```
+
+OpenCode names tools `agent2drive_a2d_status`, etc.; in Code Mode they appear as `tools.agent2drive.a2d_status(...)`. Check the connection with `opencode mcp list`.
+
+For other MCP hosts, register a local stdio server with command `agent2drive-mcp`.
+
+## Environment
+
+| Variable | Meaning |
+| --- | --- |
+| `A2D_HOME` | Where state, rclone binary and temp files live (default: XDG config dir for pip installs, repo dir for checkouts) |
+| `A2D_ALLOWED_ROOTS` | `os.pathsep`-separated list of local directories the server may upload from (default: process working directory) |
+| `GDRIVE_ROOT` | Drive root folder name (default `AgentDeliveries`) |
 
 ## Tools
 
 | Tool | Input | Result |
 | --- | --- | --- |
-| `a2d_status` | — | `AUTH_OK` / `AUTH_MISSING`, quota summary |
-| `a2d_set_client` | `client_id`, `client_secret` | confirms secret stored, never echoes it |
-| `a2d_consent_url` | — | consent URL + one-time state nonce issued |
-| `a2d_connect` | `pasted_url` | auth result or clear error; state consumed |
+| `a2d_status` | — | `AUTH_OK` / `AUTH_MISSING` |
+| `a2d_set_client` | `client_id`, `client_secret` | secret stored, never echoed |
+| `a2d_consent_url` | — | consent URL + one-time state nonce |
+| `a2d_connect` | `pasted_url` | auth result; state consumed |
 | `a2d_init_slot` | `slot` | slot root + manifest created |
-| `a2d_upload` | `slot`, `path`, `folder?`, `replace?`, `confirm?` | size/MD5/SHA-1 result, manifest row, remote path |
+| `a2d_upload` | `slot`, `path`, `folder?`, `replace?`, `confirm?` | size/MD5/SHA-1 result + manifest row |
 | `a2d_list` | `slot` | file list |
 | `a2d_manifest` | `slot` | delivery history |
 
-Each tool returns structured JSON including `ok`, `code`, `message`, and `data`. Errors never include token material.
+Responses are structured JSON (`ok`, `code`, `message`, `data`). Core functions' `print()` output is captured and returned in `data.log`, so it cannot corrupt the stdio JSON-RPC stream.
 
-## Resources and prompts
+## Resources and prompt
 
-- `a2d://slots` — known local slot configurations.
-- `a2d://slot/{slot}/files` — cached file listing.
-- `a2d://slot/{slot}/manifest` — delivery manifest text.
+- `a2d://config` — non-secret configuration (version, Drive root, allowed roots).
+- `a2d://slot/{slot}/manifest` — delivery manifest.
 - Prompt `deliver-file` — "create the file, call `a2d_upload`, report the verification result and where to review it".
 
 ## Security controls
 
-- `A2D_ALLOWED_ROOTS`: allowlist of local directories the server may read files from. Uploading `/etc/passwd` must be refused even if the model asks.
-- Slot/folder names go through the existing strict validators; no traversal.
-- `replace` without an explicit host confirmation is rejected.
-- Tool responses redact `client_secret`, `refresh_token`, and the OAuth code.
-- An append-only local audit log records tool name, arguments (redacted), timestamp, and result.
-- Scoped Drive access remains `drive.file`; no broader scope is ever requested.
+- **stdio only.** No HTTP listener or network attack surface.
+- **User-mediated auth.** The model can print a consent URL but cannot complete consent; tokens and client secrets never appear in tool responses.
+- **Path allowlist.** `A2D_ALLOWED_ROOTS` restricts uploads; symlinks are resolved so a link can't escape. Slot/folder names use the strict core validators.
+- **Overwrite gate.** `replace=True` requires `confirm="REPLACE"`.
+- **Redaction.** Client secrets, refresh tokens and OAuth codes are never returned in results.
+- **Audit trail.** The Drive-side `MANIFEST.md` records every verified delivery with hashes and timestamps. A separate local tool-call audit log is not implemented yet.
 
-## Rollout
+## Tests
 
-1. **Thin stdio server** with the tool table above, using direct function calls and the existing `_rc()` choke point. Tests with the injected fake rclone.
-2. **Resources and prompt templates**, plus configuration docs for OpenCode, Claude Desktop, and other MCP hosts.
-3. **Policy layer** (`A2D_ALLOWED_ROOTS`, confirmation tokens, audit log) and adversarial tests: path traversal, secret leakage, replayed OAuth state, overwrite without confirmation.
-4. **Optional remote transport** (streamable HTTP with short-lived bearer tokens) only if there's a real need; it stays behind a flag.
+`tests/test_agent2drive_mcp.py` covers tool registration, stdout capture, `SystemExit` handling, symlink-aware path allowlisting, replace confirmation, secret redaction, and the config resource. Verification also includes a live MCP client handshake over stdio (initialize → list tools → call tools).
 
-## Open questions
+## Deferred / open questions
 
-- Should slot configuration live in a local `agent2drive.toml` (per project) in addition to env vars?
-- Should the server maintain a local index of uploaded hashes for instant "what changed?" queries, or treat Drive as the only source of truth?
-- How should manifest conflicts be resolved when two agents upload to the same slot concurrently? (A local lock plus server-side re-read before append is the likely answer.)
+- Remote transport (streamable HTTP with short-lived bearer tokens) behind a flag.
+- Local tool-call audit log in addition to the Drive manifest.
+- Local `agent2drive.toml` for per-project slot/root configuration.
+- Concurrent uploads to the same slot: local lock plus re-read before manifest append.

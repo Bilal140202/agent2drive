@@ -95,9 +95,16 @@ State lives beside the source in a checkout, and in `~/.config/agent2drive/` for
 - Prefer `connect --stdin` so single-use codes don't land in shell history.
 - Revoke access any time at <https://myaccount.google.com/> → Security → Third-party apps → rclone.
 
-## MCP
+## MCP server
 
-See [docs/MCP.md](docs/MCP.md) for the planned MCP server: tools, resources, config, and rollout phases.
+Available from 0.4.0:
+
+```sh
+pipx install 'agent2drive[mcp]'
+opencode mcp add agent2drive -- agent2drive-mcp
+```
+
+Eight tools (`a2d_status`, `a2d_set_client`, `a2d_consent_url`, `a2d_connect`, `a2d_init_slot`, `a2d_upload`, `a2d_list`, `a2d_manifest`), two resources, and a `deliver-file` prompt. stdio only; path allowlisting (`A2D_ALLOWED_ROOTS`), overwrite confirmation, and secret redaction are built in. Full setup and security details: [docs/MCP.md](docs/MCP.md).
 
 ## Development
 

@@ -2,6 +2,16 @@
 
 All notable changes. Dates are UTC.
 
+## [0.4.0] - 2026-11-21
+
+### Added
+- **MCP server**: `agent2drive-mcp` (stdio, optional `mcp` extra) with 8 tools, `a2d://config` and `a2d://slot/{slot}/manifest` resources, and a `deliver-file` prompt. Works with MCP SDK v1 (`FastMCP`) and v2 (`MCPServer`), with structured output on v2.
+- MCP safety: `A2D_ALLOWED_ROOTS` path allowlist with symlink resolution, `confirm='REPLACE'` gate for overwrites, secret redaction, and stdout capture so core `print()` calls can't corrupt JSON-RPC.
+- OpenCode setup instructions for the local stdio server.
+
+### Tests
+- 8 new MCP tests; 31 total. Verified with a live MCP client handshake (initialize, list tools, call tools).
+
 ## [0.3.0] - 2026-11-21
 
 ### Added
